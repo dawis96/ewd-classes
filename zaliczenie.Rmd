@@ -1,0 +1,134 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+install.packages('class')
+install.packages('asbio')
+
+RAFAL JARMOLINSKI
+s20847
+
+Załaduj dane wine z pakietu asbio lub wczytaj je z pliku wine.csv.
+```{r}
+# Load library
+library(asbio)
+data("wine")
+```
+Przypisz pierwszą kolumnę do zmiennej wine.class, a pozostałe do wine.data.
+```{r}
+wine.class <- wine[,1]
+wine.data <- wine[,-1]
+```
+Sporządź histogram zmiennej wine.class.
+```{r}
+hist(wine.class)
+```
+Tu poprawic zeby najpierw podzielic.
+Każdą kolumnę macierzy wine.data wycentruj oraz wyskaluj. Skorzystaj z funkcji scale.
+```{r}
+wine.data <- scale(wine.data)
+print("Means")
+colMeans(wine.data)
+print("Std")
+apply(wine.data, 2, sd)
+```
+Zapisz klasy odpowiadające wierszom ze zbioru testowego i treningowego w zmiennych wine.train.class
+oraz wine.test.class.
+
+Utwórz z danych wine.data zbiór treningowy rozmiaru 4000 poprzez wybranie losowych wierszy, i
+zapisz go w macierzy wine.train.data. Zadbaj powtarzalność twoich obliczeń o korzystając z funkcji
+set.seed.
+```{r}
+set.seed(123)
+idx <- sample(nrow(wine.data), 4000)
+wine.train.data <- wine.data[idx, ]
+```
+Pozostałe obserwacje przypisz do zbioru testowego wine.test.data.
+```{r}
+wine.test.data <- wine.data[-idx, ]
+```
+Dodaj klasy
+```{r}
+wine.train.class <- wine.class[idx]
+wine.test.class <- wine.class[-idx]
+```
+Użyj funkcji knn z bibioteki class do zaklasyfikowania wszystkich wierszy z macierzy wine.test.data
+dla wybranej przez siebie wartości K. Następnie wypisz wartość accuracy, czyli proporcję poprawnie
+zaklasyfikowanych obserwacji.
+```{r}
+library(class)
+wine_pred <- knn(wine.train.data, wine.test.data, cl=wine.train.class, k = 7)
+accuracy <- mean(wine_pred == wine.test.class)
+accuracy
+```
+Korzystając z funkcji knn oblicz accuracy dla każdej wartośc K z zakresu od 1 do 10 a otrzymane
+wyniki przedstaw na wykresie.
+```{r}
+knn_wine <- function(k) {
+  wine_pred <- knn(wine.train.data,
+                   wine.test.data,
+                   cl=wine.train.class,
+                   k = k)
+  mean(wine_pred == wine.test.class)
+}
+k.values = c(1:10)
+acc = sapply(k.values, function(x) knn_wine(x))
+plot(k.values,
+     acc,
+     main="KNN dla 1:10",
+     xlab = "Index",
+     ylab="Accuracy")
+```
+Oblicz dla jakigo K otrzymujemy najlepszą klasyfikację.
+```{r}
+which.max(acc)
+```
+
+Implementacja klasyfikatora KNN.
+
+Napisz funkcję, która przyjmie wektor x oraz parametr K i obliczy macierz odległości pomiędzy wektorem x a każdym wierszem macierzy wine.train.data.
+Możesz wybrać dowolną odległość, ale proponujemy euklidesową.
+```{r}
+x <- wine.test.data[1,]
+m <- apply(wine.test.data, 1, function(v) {sqrt(sum((x-v)^2))})
+
+test <- function(vector_x, param_K) {
+  euc_len <- apply(
+    wine.test.data,
+    1,
+    function(v) {sqrt(sum((vector_x-v)^2))})
+  
+  
+  
+}
+
+
+```
+
+```{r}
+
+#whichpart <- function(m, n) {
+#  nx <- length(x)
+#  p <- nx-n
+#  xp <- sort(x, partial=p)[p]
+#  which(x > xp)
+#}
+
+#whichpart(m,3)
+#m[2]
+#m[8]
+#m[11]
+#max(m)
+
+#-sort(-x, partial=n-1)[n-1]
+```
+
+```{r}
+minN <- function(x, N){
+  len <- length(x)
+  sort(x,partial=len-N+1)[len-N+1]
+}
+
+minN(m, 3)
+```
