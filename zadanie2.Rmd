@@ -1,0 +1,97 @@
+---
+title: "Census-income.Analysis"
+author: "Rafal Jarmolinski, Damian Grzywna"
+date: "20 February 2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+require(ggplot2)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Pobrać dane ze strony
+```{r download, results='asis'}
+URL <- "http://mlr.cs.umass.edu/ml/machine-learning-databases/cpu-performance/machine.data"
+machine <- read.csv(url(URL), header=FALSE)
+names(machine) <- c('Vendor_name', 'Model_name', 'MYCT', 'MMIN', 'MMAX', 'CASH', 'CHMIN', 'CHMAX', 'PRP', 'ERP')
+```
+
+Dane zawieraja `r nrow(machine)` wierszy oraz `r ncol(machine)` kolumn.
+
+Wyświetlenie 6 pierwszych wierszy tabeli:
+
+```{r head, echo=FALSE, results='asis'}
+knitr::kable(head(machine), format = "markdown")
+```
+
+### 2. Dokonać analizy zbioru danych pod kątem brakujących wartości
+
+Liczba brakujących danych dla każdej z kolumn:
+```{r display_na, results='asis'}
+na_counter <- sapply(machine, function(x) sum(is.na(x)))
+knitr::kable(na_counter, format = "markdown")
+```
+
+Analiza wykazała brak brakujących wartości w zbiorze danych.
+
+## 3. Przedstawić wykresy prezentujące udział poszczególnych producentów procesorów
+```{r plot sex, echo=FALSE}
+plot(machine$Vendor_name, main="Udzial producentow procesorow", ylab="ilosc modeli", xlab="producent",
+     las=2, cex.names=.7)
+```
+
+## 4. Przedstawić histogram prezentujący wielkość MYCT.
+```{r plot MYCT, echo=FALSE}
+machine <- transform(machine, MYCT = as.numeric(MYCT))
+h <- hist(machine$MYCT, 
+          breaks = 8,
+          main="Histogram czasu cyklu maszyny (MYCT)", 
+          ylab="Czestotliwosc", 
+          xlab="Czas cyklu maszyny", 
+          col="grey",  
+          ylim=c(0,170),
+          xlim=c(0,1600),
+          xaxt="n")
+axis(side=1, at=c(0, 200, 400, 600, 800, 1000, 1200, 1400, 1600))
+
+text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
+```
+
+## 5. Przedstawić histogram prezentujący wielkości MMIN i MMAX na jednym wykresie.
+```{r plot MMIN MMAX, echo=FALSE}
+library(ggplot2)
+machine$MMIN <- sapply(machine$MMIN, as.numeric)
+machine$MMAX <- sapply(machine$MMAX, as.numeric)
+
+mainmemory <- data.frame(
+  type = c(rep("MMIN", nrow(machine)), rep("MMAX", nrow(machine))),
+  value = c(machine$MMIN, machine$MMAX)
+)
+#ggplot(mainmemory, aes(pamiec_w_kilobajtach, fill = Typ)) + ggtitle("Maksymalna i minimalna pamiec glowna") + theme(plot.title = element_text(hjust = 0.5)) + geom_histogram(position = "dodge", bins=7) +labs(y= "ilosc wystapien", x = "pamiec w kilobajtach") #+ scale_x_continuous(breaks = seq(0, 70000, 10000))
+  
+
+ggplot(aes(x = value ) , data = mainmemory) + 
+  geom_histogram(aes(fill=type), binwidth=10000, colour="grey20", lwd=0.2) +
+  stat_bin(binwidth=10000, geom="text", colour="black", size=3.5,
+           aes(label=..count.., group=type), position=position_stack(vjust=0.5)) +
+  scale_x_continuous(breaks=seq(0,max(mainmemory$value), 10000)) + 
+  ggtitle("Maksymalna i minimalna pamiec glowna") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(y= "ilosc wystapien", x = "pamiec w kilobajtach")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
