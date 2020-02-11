@@ -6,7 +6,6 @@ output:
   html_document: default
   pdf_document: default
 ---
-require(ggplot2)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -40,25 +39,34 @@ Analiza wykazała brak brakujących wartości w zbiorze danych.
 
 ## 3. Przedstawić wykresy prezentujące udział poszczególnych producentów procesorów
 ```{r plot sex, echo=FALSE}
-plot(machine$Vendor_name, main="Udzial producentow procesorow", ylab="ilosc modeli", xlab="producent",
-     las=2, cex.names=.7)
+ggplot(data=machine, aes(machine$Vendor_name, fill=..count..)) + 
+  scale_fill_gradient(low="green", high="red") +
+  geom_bar(aes(y = (..count..)),
+           col="red") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  ggtitle("Udzial producentow procesorow") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(y= "ilosc modeli", x = "producent") 
+   
+  
 ```
 
 ## 4. Przedstawić histogram prezentujący wielkość MYCT.
 ```{r plot MYCT, echo=FALSE}
 machine <- transform(machine, MYCT = as.numeric(MYCT))
-h <- hist(machine$MYCT, 
-          breaks = 8,
-          main="Histogram czasu cyklu maszyny (MYCT)", 
-          ylab="Czestotliwosc", 
-          xlab="Czas cyklu maszyny", 
-          col="grey",  
-          ylim=c(0,170),
-          xlim=c(0,1600),
-          xaxt="n")
-axis(side=1, at=c(0, 200, 400, 600, 800, 1000, 1200, 1400, 1600))
 
-text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
+ggplot(data=machine, aes(machine$MYCT)) + 
+  geom_histogram(breaks=seq(0, 1600, by=200),
+                 aes(y = ..count..),
+                 center = 1,
+                 col="red", 
+                 fill="blue", 
+                 alpha = .5) + 
+  scale_y_continuous(breaks=seq(0,150 , 30)) +
+  scale_x_continuous(breaks=seq(0, 1600, 200)) +
+  ggtitle("Histogram czasu cyklu maszyny (MYCT)") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(y= "ilosc wystapien", x = "Czas cyklu maszyny")
 ```
 
 ## 5. Przedstawić histogram prezentujący wielkości MMIN i MMAX na jednym wykresie.
@@ -72,10 +80,11 @@ mainmemory <- data.frame(
 )
 
 ggplot(aes(x = value ) , data = mainmemory) + 
-  geom_histogram(aes(fill=type), binwidth=10000, colour="grey20", lwd=0.2) +
-  stat_bin(binwidth=10000, geom="text", colour="black", size=3.5,
-           aes(label=..count.., group=type), position=position_stack(vjust=0.5)) +
-  scale_x_continuous(breaks=seq(0,max(mainmemory$value), 10000)) + 
+  geom_histogram(aes(fill=type),breaks=seq(0, 70000, by=10000), colour="grey20", lwd=0.2) +
+  #stat_bin(breaks=seq(0, 70000, by=10000), geom="text", colour="black", size=3.5,
+  #         aes(label=..count.., group=type), position=position_stack(vjust=0.5)) +
+  scale_x_continuous(breaks=seq(0, 70000, by=10000)) + 
+  scale_y_continuous(breaks=seq(0,300, 50)) +
   ggtitle("Maksymalna i minimalna pamiec glowna") + 
   theme(plot.title = element_text(hjust = 0.5)) + 
   labs(y= "ilosc wystapien", x = "pamiec w kilobajtach")
@@ -129,11 +138,9 @@ knitr::kable(statistics, format = "markdown")
 
 ```{r plot MMIN AX, echo=FALSE}
 ggplot(aes(x = ERP) , data = vendors) + 
-  geom_histogram(aes(fill=Vendor_name), binwidth=50, colour="grey20", lwd=0.2) +
-  #stat_bin(binwidth=100, geom="text", colour="black", size=3.5,
-  #         aes(label=..count.., group=Vendor_name), position=position_stack(vjust=0.5)) +
-  scale_x_continuous(breaks=seq(0,max(vendors$ERP), 50)) + 
-  scale_y_continuous(breaks=seq(0,30, 2)) +
+  geom_histogram(aes(fill=Vendor_name), breaks=seq(0, 700, by=100), colour="grey20", lwd=0.2) +
+  scale_x_continuous(breaks=seq(0, 700, by=100)) + 
+  scale_y_continuous(breaks=seq(0,50, 10)) +
   ggtitle("Histogram wartosci ERP") + 
   theme(plot.title = element_text(hjust = 0.5)) + 
   labs(y= "ilosc wystapien", x = "ERP")
