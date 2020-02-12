@@ -87,48 +87,41 @@ which.max(acc)
 
 Implementacja klasyfikatora KNN.
 
-Napisz funkcję, która przyjmie wektor x oraz parametr K i obliczy macierz odległości pomiędzy wektorem x a każdym wierszem macierzy wine.train.data.
-Możesz wybrać dowolną odległość, ale proponujemy euklidesową.
 ```{r}
-x <- wine.test.data[1,]
-m <- apply(wine.test.data, 1, function(v) {sqrt(sum((x-v)^2))})
-
-test <- function(vector_x, param_K) {
-  euc_len <- apply(
-    wine.test.data,
-    1,
-    function(v) {sqrt(sum((vector_x-v)^2))})
+knn.scratch <- function(vectors, wines, wines.labels, k)
+{
+  # Tworzy macierz precalc, powielajac wektor dla ktorego bedzie obliczana odleglosc
+  # Liczba wierszy precalc rowna liczbie wierszy w macierzy wines
+  precalc <- matrix(as.numeric(vectors), nrow=nrow(wines), ncol=length(vectors), byrow=T)
   
+  # Obliczy macierz odległości
+  # Odleglosc euklidesowa cz. 1: kwadrat roznicy
+  precalc <- (abs(as.matrix(wines)-precalc))^2
+  # Odleglosc euklidesowa cz. 2: pierwiastek z cz. 1
+  eucli <- (rowSums(precalc))^(1/2)
   
+  # Znajdzie numery wierszy zawierających K obserwacji najbliższych wektorowi x,
+  # a następnie odczyta klasy odpowiadające tym wierszom i
+  # zliczy występowania każdej z klas
+  # Tworzy data frame z dwoma kolumnami: odleglosc i kategoria
+  eucli.df <- data.frame(distance=eucli,label=wines.labels)
+  # Uporzadkowuje od wartosci najmniejszej
+  eucli.df <- (eucli.df[order(eucli.df$distance),])
+  # Bierze k pierwszych wartosci z uporzadkowanej data frame
+  eucli.df <- eucli.df[1:k,]
+  exit.values <- names(sort(-table(eucli.df$label)))[1]
   
+  # Zwróci najczęstszą klasę
+  return(exit.values)
 }
-
-
 ```
 
 ```{r}
+# Zastosuj tą funkcję do zaklasyfikowania wszystkich wierszy z macierzy wine.test.data
+xx <- wine.test.data
+results <- apply(wine.test.data, 1, function(x) knn.scratch(x, wine.train.data, wine.train.class, k=1))
+print("Accuracy")
+# Oblicz wartość accuracy dla tego predyktora
+mean(results == wine.test.class)
 
-#whichpart <- function(m, n) {
-#  nx <- length(x)
-#  p <- nx-n
-#  xp <- sort(x, partial=p)[p]
-#  which(x > xp)
-#}
-
-#whichpart(m,3)
-#m[2]
-#m[8]
-#m[11]
-#max(m)
-
-#-sort(-x, partial=n-1)[n-1]
-```
-
-```{r}
-minN <- function(x, N){
-  len <- length(x)
-  sort(x,partial=len-N+1)[len-N+1]
-}
-
-minN(m, 3)
 ```
