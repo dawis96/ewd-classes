@@ -1,0 +1,148 @@
+---
+title: "Zadanie 2"
+author: "Rafal Jarmolinski, Damian Grzywna"
+date: "11 February 2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+### 1. Pobrać dane ze strony
+```{r download, results='asis'}
+URL <- "http://mlr.cs.umass.edu/ml/machine-learning-databases/cpu-performance/machine.data"
+machine <- read.csv(url(URL), header=FALSE)
+names(machine) <- c('Vendor_name', 'Model_name', 'MYCT', 'MMIN', 'MMAX', 'CASH', 'CHMIN', 'CHMAX', 'PRP', 'ERP')
+```
+
+Dane zawieraja `r nrow(machine)` wierszy oraz `r ncol(machine)` kolumn.
+
+Wyświetlenie 6 pierwszych wierszy tabeli:
+
+```{r head, echo=FALSE, results='asis'}
+knitr::kable(head(machine), format = "markdown")
+```
+
+### 2. Dokonać analizy zbioru danych pod kątem brakujących wartości
+
+Liczba brakujących danych dla każdej z kolumn:
+```{r display_na, results='asis'}
+na_counter <- sapply(machine, function(x) sum(is.na(x)))
+knitr::kable(na_counter, format = "markdown")
+```
+
+Analiza wykazała brak brakujących wartości w zbiorze danych.
+
+## 3. Przedstawić wykresy prezentujące udział poszczególnych producentów procesorów
+```{r plot sex, echo=FALSE}
+ggplot(data=machine, aes(machine$Vendor_name, fill=..count..)) + 
+  scale_fill_gradient(low="green", high="red") +
+  geom_bar(aes(y = (..count..)),
+           col="red") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  ggtitle("Udzial producentow procesorow") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(y= "ilosc modeli", x = "producent") 
+   
+  
+```
+
+## 4. Przedstawić histogram prezentujący wielkość MYCT.
+```{r plot MYCT, echo=FALSE}
+machine <- transform(machine, MYCT = as.numeric(MYCT))
+
+ggplot(data=machine, aes(machine$MYCT)) + 
+  geom_histogram(breaks=seq(0, 1600, by=200),
+                 aes(y = ..count..),
+                 center = 1,
+                 col="red", 
+                 fill="blue", 
+                 alpha = .5) + 
+  scale_y_continuous(breaks=seq(0,150 , 30)) +
+  scale_x_continuous(breaks=seq(0, 1600, 200)) +
+  ggtitle("Histogram czasu cyklu maszyny (MYCT)") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(y= "ilosc wystapien", x = "Czas cyklu maszyny")
+```
+
+## 5. Przedstawić histogram prezentujący wielkości MMIN i MMAX na jednym wykresie.
+```{r plot MMIN MMAX, echo=FALSE}
+machine$MMIN <- sapply(machine$MMIN, as.numeric)
+machine$MMAX <- sapply(machine$MMAX, as.numeric)
+
+mainmemory <- data.frame(
+  type = c(rep("MMIN", nrow(machine)), rep("MMAX", nrow(machine))),
+  value = c(machine$MMIN, machine$MMAX)
+)
+
+ggplot(aes(x = value ) , data = mainmemory) + 
+  geom_histogram(aes(fill=type),breaks=seq(0, 70000, by=10000), colour="grey20", lwd=0.2) +
+  #stat_bin(breaks=seq(0, 70000, by=10000), geom="text", colour="black", size=3.5,
+  #         aes(label=..count.., group=type), position=position_stack(vjust=0.5)) +
+  scale_x_continuous(breaks=seq(0, 70000, by=10000)) + 
+  scale_y_continuous(breaks=seq(0,300, 50)) +
+  ggtitle("Maksymalna i minimalna pamiec glowna") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(y= "ilosc wystapien", x = "pamiec w kilobajtach")
+
+```
+
+## 6. Przedstawić tabelę prezentującą procentowy udział procesorów z CHMAX większym niż 12 w grupach wyodrębnionych ze względu na producenta
+
+Procentowy udzial procesorow z CHMAX wiekszym niz 12:
+```{r display_percent_CHMAX, results='asis'}
+chmax_all <- aggregate(CHMAX ~ Vendor_name, machine, length)
+chmax_above_12 <- aggregate(CHMAX ~ Vendor_name, machine[machine$CHMAX>12, ], length)
+chmax <- merge(x=chmax_all ,y=chmax_above_12, by="Vendor_name",all=TRUE)
+names(chmax) <- c("Nazwa_producenta", "ilosc_procesorow", "ilosc_procesorow_z_CHMAX_wiekszym_od_20")
+chmax[is.na(chmax)] <- 0
+chmax$Udzial_w_procentach = round( chmax$ilosc_procesorow_z_CHMAX_wiekszym_od_20/chmax$ilosc_procesorow * 100, digits=2)
+knitr::kable(chmax[,c("Nazwa_producenta", "Udzial_w_procentach" )], format = "markdown")
+```
+
+## 7. Obliczyć ile firm produkuje procesory z CHMIN większym niż 16.
+
+```{r chmin_above16, results='asis'}
+chmin_above_16 <- machine[machine$CHMIN>16, ]
+unique_vendors <- unique(chmin_above_16$Vendor_name)
+```
+
+`r length(unique_vendors)` firmy produkuje procesory z CHMIN wiekszym niz 16 i sa to: `r unique_vendors`.
+
+## 8. Posługując się wykresami/tabelami pokazać jak kształtuje wartość ERP dla 4 producentów, który produkują najwięcej typów procesorów.
+
+```{r erp}
+vendors <- as.data.frame(sort(table(unlist(machine$Vendor_name)), decreasing = TRUE)[1:4])
+vendors <- machine[machine$Vendor_name %in% vendors$Var1,]
+rownames(vendors) <- NULL
+vendors$Vendor_name <- sapply(vendors$Vendor_name, as.factor)
+vendors$ERP <- sapply(vendors$ERP, as.numeric)
+
+mean_erp <- tapply(vendors$ERP, vendors$Vendor_name, mean)
+mean_erp <- round(mean_erp, digits=2)
+min_erp <- tapply(vendors$ERP, vendors$Vendor_name, min)
+max_erp <- tapply(vendors$ERP, vendors$Vendor_name, max)
+median_erp <- tapply(vendors$ERP, vendors$Vendor_name, median)
+number_of_models <- tapply(vendors$ERP, vendors$Vendor_name, length)
+statistics <- data.frame(number_of_models, mean_erp, median_erp, min_erp, max_erp)
+statistics <- na.omit(statistics)
+```
+
+```{r echo=FALSE, results='asis'}
+knitr::kable(statistics, format = "markdown")
+```
+
+```{r plot MMIN AX, echo=FALSE}
+ggplot(aes(x = ERP) , data = vendors) + 
+  geom_histogram(aes(fill=Vendor_name), breaks=seq(0, 700, by=100), colour="grey20", lwd=0.2) +
+  scale_x_continuous(breaks=seq(0, 700, by=100)) + 
+  scale_y_continuous(breaks=seq(0,50, 10)) +
+  ggtitle("Histogram wartosci ERP") + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(y= "ilosc wystapien", x = "ERP")
+
+```
